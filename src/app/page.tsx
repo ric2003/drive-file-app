@@ -19,142 +19,9 @@ import {
   MoreVertical,
 } from "lucide-react";
 import { cn } from "~/lib/utils";
+import { mockfolders, mockfiles } from "~/lib/file";
 
-// Mock data structure
-const mockData = {
-  "/": {
-    name: "My Drive",
-    items: [
-      {
-        id: "1",
-        name: "Documents",
-        type: "folder",
-        size: null,
-        modified: "2024-01-15",
-      },
-      {
-        id: "2",
-        name: "Photos",
-        type: "folder",
-        size: null,
-        modified: "2024-01-10",
-      },
-      {
-        id: "3",
-        name: "Projects",
-        type: "folder",
-        size: null,
-        modified: "2024-01-20",
-      },
-      {
-        id: "4",
-        name: "Resume.pdf",
-        type: "file",
-        fileType: "pdf",
-        size: "2.4 MB",
-        modified: "2024-01-18",
-        url: "https://example.com/resume.pdf",
-      },
-      {
-        id: "5",
-        name: "Presentation.pptx",
-        type: "file",
-        fileType: "presentation",
-        size: "15.2 MB",
-        modified: "2024-01-16",
-        url: "https://example.com/presentation.pptx",
-      },
-    ],
-  },
-  "/Documents": {
-    name: "Documents",
-    items: [
-      {
-        id: "6",
-        name: "Reports",
-        type: "folder",
-        size: null,
-        modified: "2024-01-12",
-      },
-      {
-        id: "7",
-        name: "Contract.docx",
-        type: "file",
-        fileType: "document",
-        size: "1.2 MB",
-        modified: "2024-01-14",
-        url: "https://example.com/contract.docx",
-      },
-      {
-        id: "8",
-        name: "Notes.txt",
-        type: "file",
-        fileType: "text",
-        size: "45 KB",
-        modified: "2024-01-13",
-        url: "https://example.com/notes.txt",
-      },
-    ],
-  },
-  "/Photos": {
-    name: "Photos",
-    items: [
-      {
-        id: "9",
-        name: "Vacation",
-        type: "folder",
-        size: null,
-        modified: "2024-01-08",
-      },
-      {
-        id: "10",
-        name: "sunset.jpg",
-        type: "file",
-        fileType: "image",
-        size: "3.2 MB",
-        modified: "2024-01-09",
-        url: "https://example.com/sunset.jpg",
-      },
-      {
-        id: "11",
-        name: "family.png",
-        type: "file",
-        fileType: "image",
-        size: "2.8 MB",
-        modified: "2024-01-07",
-        url: "https://example.com/family.png",
-      },
-    ],
-  },
-  "/Projects": {
-    name: "Projects",
-    items: [
-      {
-        id: "12",
-        name: "Website",
-        type: "folder",
-        size: null,
-        modified: "2024-01-19",
-      },
-      {
-        id: "13",
-        name: "App Design",
-        type: "folder",
-        size: null,
-        modified: "2024-01-17",
-      },
-      {
-        id: "14",
-        name: "demo.mp4",
-        type: "file",
-        fileType: "video",
-        size: "45.6 MB",
-        modified: "2024-01-18",
-        url: "https://example.com/demo.mp4",
-      },
-    ],
-  },
-};
+// Navigation is driven by folder parent/child relationships from mock data
 
 const getFileIcon = (fileType: string) => {
   switch (fileType) {
@@ -178,36 +45,56 @@ const getFileIcon = (fileType: string) => {
 };
 
 export default function DrivePage() {
-  const [currentPath, setCurrentPath] = useState("/");
+  const [currentFolderId, setCurrentFolderId] = useState("root");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const currentFolder = mockData[currentPath as keyof typeof mockData];
+  // Build lookup for folders
+  const folderById = Object.fromEntries(
+    mockfolders.map((folder) => [folder.id, folder]),
+  ) as Record<
+    string,
+    { id: string; name: string; type: "folder"; parent: string | null }
+  >;
 
-  const pathSegments =
-    currentPath === "/" ? [] : currentPath.split("/").filter(Boolean);
-
-  const navigateToFolder = (folderId: string, folderName: string) => {
-    const newPath =
-      currentPath === "/" ? `/${folderName}` : `${currentPath}/${folderName}`;
-    if (mockData[newPath as keyof typeof mockData]) {
-      setCurrentPath(newPath);
+  // Breadcrumbs from root to current folder (excluding root button)
+  const breadcrumbs = (() => {
+    const chain: { id: string; name: string }[] = [];
+    let cursor = folderById[currentFolderId];
+    while (cursor && cursor.parent) {
+      chain.unshift({ id: cursor.id, name: cursor.name });
+      cursor = folderById[cursor.parent];
     }
-  };
+    return chain;
+  })();
 
-  const navigateToBreadcrumb = (index: number) => {
-    if (index === -1) {
-      setCurrentPath("/");
-    } else {
-      const newPath = "/" + pathSegments.slice(0, index + 1).join("/");
-      setCurrentPath(newPath);
-    }
-  };
+  type Item =
+    | { id: string; name: string; type: "folder" }
+    | { id: string; name: string; type: "file"; url: string; size: number };
 
-  const filteredItems =
-    currentFolder?.items.filter((item) =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()),
-    ) || [];
+  const visibleFolders = mockfolders.filter(
+    (f) => f.parent === currentFolderId,
+  );
+  const visibleFiles = mockfiles.filter((f) => f.parent === currentFolderId);
+
+  const mergedItems: Item[] = [
+    ...visibleFolders.map((f) => ({
+      id: f.id,
+      name: f.name,
+      type: "folder" as const,
+    })),
+    ...visibleFiles.map((f) => ({
+      id: f.id,
+      name: f.name,
+      type: "file" as const,
+      url: f.url,
+      size: f.size,
+    })),
+  ];
+
+  const filteredItems = mergedItems.filter((item) =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
   return (
     <div className="bg-background text-foreground dark min-h-screen">
@@ -220,20 +107,20 @@ export default function DrivePage() {
             {/* Breadcrumb Navigation */}
             <nav className="text-muted-foreground flex items-center gap-1 text-sm">
               <button
-                onClick={() => navigateToBreadcrumb(-1)}
+                onClick={() => setCurrentFolderId("root")}
                 className="hover:text-foreground flex items-center gap-1 transition-colors"
               >
                 <Home className="h-4 w-4" />
                 My Drive
               </button>
-              {pathSegments.map((segment, index) => (
-                <div key={index} className="flex items-center gap-1">
+              {breadcrumbs.map((crumb, index) => (
+                <div key={crumb.id} className="flex items-center gap-1">
                   <ChevronRight className="h-4 w-4" />
                   <button
-                    onClick={() => navigateToBreadcrumb(index)}
+                    onClick={() => setCurrentFolderId(crumb.id)}
                     className="hover:text-foreground transition-colors"
                   >
-                    {segment}
+                    {crumb.name}
                   </button>
                 </div>
               ))}
@@ -299,7 +186,7 @@ export default function DrivePage() {
           >
             {filteredItems.map((item) => (
               <div
-                key={item.id}
+                key={`${item.type}:${item.id}`}
                 className={cn(
                   "group cursor-pointer rounded-lg transition-colors",
                   viewMode === "grid"
@@ -308,8 +195,8 @@ export default function DrivePage() {
                 )}
                 onClick={() => {
                   if (item.type === "folder") {
-                    navigateToFolder(item.id, item.name);
-                  } else if (item.url) {
+                    setCurrentFolderId(item.id);
+                  } else if (item.type === "file") {
                     window.open(item.url, "_blank");
                   }
                 }}
@@ -321,18 +208,16 @@ export default function DrivePage() {
                         <Folder className="h-12 w-12 text-blue-500" />
                       ) : (
                         <div className="flex h-12 w-12 items-center justify-center">
-                          {getFileIcon(item.fileType ?? "text")}
+                          {getFileIcon("file")}
                         </div>
                       )}
                     </div>
                     <div className="truncate text-sm font-medium">
                       {item.name}
                     </div>
-                    {item.size && (
-                      <div className="text-muted-foreground text-xs">
-                        {item.size}
-                      </div>
-                    )}
+                    <div className="text-muted-foreground text-xs">
+                      {item.type === "folder" ? "Folder" : "File"}
+                    </div>
                   </>
                 ) : (
                   <>
@@ -340,18 +225,16 @@ export default function DrivePage() {
                       {item.type === "folder" ? (
                         <Folder className="h-5 w-5 text-blue-500" />
                       ) : (
-                        getFileIcon(item.fileType ?? "text")
+                        getFileIcon("file")
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium">{item.name}</div>
                     </div>
                     <div className="text-muted-foreground w-20 text-right text-sm">
-                      {item.size ?? "—"}
+                      {item.type === "folder" ? "Folder" : "File"}
                     </div>
-                    <div className="text-muted-foreground w-24 text-right text-sm">
-                      {item.modified}
-                    </div>
+
                     <Button
                       variant="ghost"
                       size="sm"
