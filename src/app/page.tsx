@@ -61,7 +61,7 @@ export default function DrivePage() {
   const breadcrumbs = (() => {
     const chain: { id: string; name: string }[] = [];
     let cursor = folderById[currentFolderId];
-    while (cursor && cursor.parent) {
+    while (cursor?.parent) {
       chain.unshift({ id: cursor.id, name: cursor.name });
       cursor = folderById[cursor.parent];
     }
@@ -113,7 +113,7 @@ export default function DrivePage() {
                 <Home className="h-4 w-4" />
                 My Drive
               </button>
-              {breadcrumbs.map((crumb, index) => (
+              {breadcrumbs.map((crumb) => (
                 <div key={crumb.id} className="flex items-center gap-1">
                   <ChevronRight className="h-4 w-4" />
                   <button
