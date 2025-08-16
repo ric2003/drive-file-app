@@ -21,3 +21,9 @@ jobs:
 
       - name: Lint
         run: pnpm lint
+        env:
+          SINGLESTORE_USER: ${{ secrets.SINGLESTORE_USER }}
+          SINGLESTORE_PASS: ${{ secrets.SINGLESTORE_PASS }}
+          SINGLESTORE_Host: ${{ secrets.SINGLESTORE_HOST }}
+          SINGLESTORE_Port: ${{ secrets.SINGLESTORE_PORT }}
+          SINGLESTORE_DB: ${{ secrets.SINGLESTORE_DB }}
