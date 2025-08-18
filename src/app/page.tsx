@@ -8,18 +8,11 @@ import {
   Search,
   Grid3X3,
   List,
-  Folder,
-  FileText,
-  ImageIcon,
-  Video,
-  Music,
-  Archive,
   ChevronRight,
   Home,
-  MoreVertical,
 } from "lucide-react";
 import { cn } from "~/lib/utils";
-import { mockfolders, mockfiles, type file, type folder } from "~/lib/file";
+import { mockfolders, mockfiles } from "~/lib/file";
 import DriveItem from "~/components/driveItem";
 
 // Navigation is driven by folder parent/child relationships from mock data
@@ -167,7 +160,7 @@ export default function DrivePage() {
             {filteredItems.map((item) => (
               <DriveItem
                 key={`${item.type}:${item.id}`}
-                item={item as file | folder}
+                item={item}
                 viewMode={viewMode}
                 setCurrentFolderId={setCurrentFolderId}
               />

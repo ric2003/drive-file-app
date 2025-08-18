@@ -1,21 +1,23 @@
 import { Folder, MoreVertical } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
-import type { file, folder } from "~/lib/file";
 import { getFileIcon } from "~/lib/file-icons";
+
+type DriveListItem =
+  | { id: string; name: string; type: "folder" }
+  | { id: string; name: string; type: "file"; url: string; size: number };
 
 export default function DriveItem({
   item,
   viewMode,
   setCurrentFolderId,
 }: {
-  item: file | folder;
-  viewMode: string;
+  item: DriveListItem;
+  viewMode: "grid" | "list";
   setCurrentFolderId: (id: string) => void;
 }) {
   return (
     <div
-      key={`${item.type}:${item.id}`}
       className={cn(
         "group cursor-pointer rounded-lg transition-colors",
         viewMode === "grid"
